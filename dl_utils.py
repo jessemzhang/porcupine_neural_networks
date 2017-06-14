@@ -134,7 +134,7 @@ def generate_output(X,w,input_dict,build_func=arch.mlp,batch_size=100):
             y[i:i+batch_size] = y_
     return y
 
-# Generate loss with underlying true weights
+# Generate loss for some given weights w
 def generate_loss(X,Y,w,input_dict,build_func=arch.mlp,batch_size=100):
     tf.reset_default_graph()
     graph = graph_builder_wrapper(input_dict,build_func=build_func)
@@ -216,9 +216,9 @@ def generate_X(N,q,input_dict,cov_is_eye=False):
     return X
 
 
-def generate_data(N,q,input_dict,seed=0,build_func=arch.mlp,get_hs=False):
+def generate_data(N,q,input_dict,seed=0,build_func=arch.mlp,get_hs=False,cov_is_eye=False):
     np.random.seed(seed)
-    X = generate_X(N,q,input_dict)
+    X = generate_X(N,q,input_dict,cov_is_eye=cov_is_eye)
     Y,weights = generate_random_weights_and_output(X,input_dict,build_func=build_func)
     if get_hs: 
         hs = get_hidden_states(X,input_dict,weights,build_func=build_func)
