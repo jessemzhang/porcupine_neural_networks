@@ -193,6 +193,8 @@ def get_train_out(X,Y,w,input_dict,savedir,build_func):
 
 def generate_X(N,q,input_dict,cov_is_eye=False):
 
+    p = input_dict['p']
+
     if cov_is_eye:
         # generate covariance matrix approach 1: all iid
         C = np.eye(p)
@@ -200,7 +202,6 @@ def generate_X(N,q,input_dict,cov_is_eye=False):
 
     else:
         # generate covariance matrix approach 2: low-rank covariance matrix
-        p = input_dict['p']
         A = np.random.normal(0,1,[p,q])
         C = np.dot(A,A.T)
         u,s,v = np.linalg.svd(C)
@@ -210,8 +211,8 @@ def generate_X(N,q,input_dict,cov_is_eye=False):
         A = np.dot(v,np.diag(np.sqrt(u)))
         B = np.random.normal(0,1,(10,10))  # Rotate A by random matrix to ensure samples are dense
         u,v = np.linalg.eigh(C)
+        A = np.dot(A,v)
 
-    A = np.dot(A,v)
     X = np.dot(np.random.normal(0,1,[N,p]),A.T) # sample X
     return X
 
