@@ -92,6 +92,7 @@ def train(X,Y,graph,num_epochs,batch_size,w_true,w_initial=None,verbose=True,sav
         final_w_gap,final_train_loss = compute_wgap_and_loss(X,Y,w_true,graph,sess,
                                                              batch_size=batch_size)
     
+        # only saving weights from last epoch
         if savedir is not None: 
             os.system('mkdir -p %s'%(savedir))
             graph['saver'].save(sess,'%sepoch%s'%(savedir,epoch))
@@ -191,7 +192,9 @@ def get_train_out(X,Y,w,input_dict,savedir,build_func):
 # ------------------------------------------------------------------------------
 # Functions for generating data
 
-def generate_X(N,q,input_dict,cov_is_eye=False):
+def generate_X(N,q,input_dict,cov_is_eye=False,seed=0):
+
+    np.random.seed(seed)
 
     p = input_dict['p']
 
@@ -219,7 +222,7 @@ def generate_X(N,q,input_dict,cov_is_eye=False):
 
 def generate_data(N,q,input_dict,seed=0,build_func=arch.mlp,get_hs=False,cov_is_eye=False):
     np.random.seed(seed)
-    X = generate_X(N,q,input_dict,cov_is_eye=cov_is_eye)
+    X = generate_X(N,q,input_dict,cov_is_eye=cov_is_eye,seed=seed)
     Y,weights = generate_random_weights_and_output(X,input_dict,build_func=build_func)
     if get_hs: 
         hs = get_hidden_states(X,input_dict,weights,build_func=build_func)
