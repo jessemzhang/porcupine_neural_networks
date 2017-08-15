@@ -45,11 +45,13 @@ def compute_wgap_and_loss(X,Y,w_true,graph,sess,batch_size=100):
     return wg, np.mean(l)
 
 # w_initial should be a dictionary with keys corresponding to weight matrices in the graph
-def train(X,Y,graph,num_epochs,batch_size,w_true,w_initial=None,verbose=True,savedir=None):
+def train(X,Y,graph,num_epochs,batch_size,w_true,w_initial=None,verbose=True,savedir=None,
+          early_stop_loss=1e-5,lr_initial=0.01,get_update_history=False):
 
     if verbose: start = time.time()
     training_losses = []
     training_w_gaps = []
+    if get_update_history: weights_history = []
     with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
         sess.run(tf.global_variables_initializer())
         if w_initial is not None: 
@@ -60,7 +62,7 @@ def train(X,Y,graph,num_epochs,batch_size,w_true,w_initial=None,verbose=True,sav
                                                                        batch_size=batch_size)
         
         for epoch in range(num_epochs):
-            lr = 0.01*0.95**(epoch/390.) # initial lr * decay rate ^(step/decay_steps)
+            lr = lr_initial*0.95**(epoch/390.) # initial lr * decay rate ^(step/decay_steps)
             sess.run(graph['learning_rate'].assign(lr))
             t = time.time()
             training_loss = 0
@@ -72,10 +74,22 @@ def train(X,Y,graph,num_epochs,batch_size,w_true,w_initial=None,verbose=True,sav
                 feed_dict = {graph['w'][k]:w_true[k] for k in w_true}
                 feed_dict[graph['x']] = x
                 feed_dict[graph['y']] = y
-                training_loss_,training_w_gap_,_ = sess.run([graph['total_loss'],
-                                                             graph['total_w_gap'],
-                                                             graph['opt_step']],
-                                                            feed_dict=feed_dict)
+                if get_update_history:
+                    training_loss_,training_w_gap_,_,grads,mgrads,w = sess.run([graph['total_loss'],
+                                                                                graph['total_w_gap'],
+                                                                                graph['opt_step'],
+                                                                                graph['grads'],
+                                                                                graph['modified_grads'],
+                                                                                graph['weights1']],
+                                                                               feed_dict=feed_dict)
+                    weights_history.append((grads,mgrads,w))
+
+                else:
+                    training_loss_,training_w_gap_,_ = sess.run([graph['total_loss'],
+                                                                 graph['total_w_gap'],
+                                                                 graph['opt_step']],
+                                                                feed_dict=feed_dict)
+                
                 training_loss += training_loss_
                 training_w_gap += training_w_gap_
                 steps += 1.
@@ -88,6 +102,12 @@ def train(X,Y,graph,num_epochs,batch_size,w_true,w_initial=None,verbose=True,sav
             training_losses.append(training_loss/steps)
             training_w_gaps.append(training_w_gap/steps)
 
+            if early_stop_loss is not None and np.mean(training_losses[-10:]) <= early_stop_loss:
+                if verbose:
+                    print('\rMean loss <= %.3e for last 10 epochs. Stopping training after epoch %s/%s.'
+                          %(early_stop_loss,epoch+1,num_epochs+1),end='')
+                break
+
         w_hat = {k:sess.run(graph[k]) for k in graph if 'weights' in k} # grab all final weights
         final_w_gap,final_train_loss = compute_wgap_and_loss(X,Y,w_true,graph,sess,
                                                              batch_size=batch_size)
@@ -96,8 +116,12 @@ def train(X,Y,graph,num_epochs,batch_size,w_true,w_initial=None,verbose=True,sav
         if savedir is not None: 
             os.system('mkdir -p %s'%(savedir))
             graph['saver'].save(sess,'%sepoch%s'%(savedir,epoch))
-
+            
     if verbose: print('')
+    if get_update_history:
+        return training_losses,training_w_gaps,w_hat, \
+               initial_train_loss,initial_train_w_gap,final_train_loss,final_w_gap, \
+               weights_history
     return training_losses,training_w_gaps,w_hat, \
            initial_train_loss,initial_train_w_gap,final_train_loss,final_w_gap
 
