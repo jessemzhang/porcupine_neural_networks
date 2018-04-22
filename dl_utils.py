@@ -21,7 +21,7 @@ def graph_builder_wrapper(input_dict,build_func=arch.mlp,lr_initial=0.01,max_sav
 
     total_loss = loss(y, graph['yhat'])
     total_w_gap = w_gap(w, {k:graph[k] for k in graph if 'weights' in k})
-    learning_rate = tf.Variable(lr_initial, name='learning_rate')
+    learning_rate = tf.Variable(lr_initial, name='learning_rate', trainable=False)
     opt_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(total_loss)
     graph['y'] = y
     graph['w'] = w
@@ -132,7 +132,10 @@ def train(X,Y,graph,num_epochs,batch_size,w_true,w_initial=None,verbose=True,sav
 # w_initial should be a dictionary with keys corresponding to weight matrices in the graph
 def train_no_wtrue(X, Y, graph, num_epochs, batch_size, 
                    w_initial=None, verbose=True,savedir=None, early_stop_loss=1e-5,
-                   lr_initial=0.01, get_update_history=False, gpu_prop=0.1, seed=0):
+                   lr_initial=0.01, get_update_history=False, gpu_prop=0.1, seed=0, PNN=False):
+    if PNN:
+        assert w_initial is not None
+        u = w_initial['weights1'] / np.linalg.norm(w_initial['weights1'], axis=0)
 
     if verbose: start = time.time()
     training_losses = []
@@ -146,6 +149,9 @@ def train_no_wtrue(X, Y, graph, num_epochs, batch_size,
         
         if w_initial is not None: 
             for k in w_initial: sess.run(graph[k].assign(w_initial[k]))
+                
+        if PNN:
+            sess.run(graph['u'].assign(u))
         
         for epoch in range(num_epochs):
             lr = lr_initial*0.95**(epoch/390.) # initial lr * decay rate ^(step/decay_steps)
@@ -159,6 +165,7 @@ def train_no_wtrue(X, Y, graph, num_epochs, batch_size,
                 x, y = X_[i:i+batch_size], Y_[i:i+batch_size]
                 
                 feed_dict = {graph['x']: x, graph['y']: y}
+                    
                 if get_update_history:
                     training_loss_, _, grads, mgrads, w = sess.run([graph['total_loss'],
                                                                     graph['opt_step'],
