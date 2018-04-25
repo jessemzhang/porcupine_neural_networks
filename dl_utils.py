@@ -132,7 +132,8 @@ def train(X,Y,graph,num_epochs,batch_size,w_true,w_initial=None,verbose=True,sav
 # w_initial should be a dictionary with keys corresponding to weight matrices in the graph
 def train_no_wtrue(X, Y, graph, num_epochs, batch_size, 
                    w_initial=None, verbose=True,savedir=None, early_stop_loss=1e-5,
-                   lr_initial=0.01, get_update_history=False, gpu_prop=0.1, seed=0, PNN=False):
+                   lr_initial=0.01, get_update_history=False, gpu_prop=0.1, seed=0, PNN=False,
+                   normalize_loss=False):
     if PNN:
         assert w_initial is not None
         u = w_initial['weights1'] / np.linalg.norm(w_initial['weights1'], axis=0)
@@ -179,6 +180,9 @@ def train_no_wtrue(X, Y, graph, num_epochs, batch_size,
                     training_loss_, _ = sess.run([graph['total_loss'], graph['opt_step']],
                                                  feed_dict=feed_dict)
                 
+                if normalize_loss:
+                    training_loss_ *= len(y)/np.sum(np.square(y))
+
                 training_loss += training_loss_
                 steps += 1.
                 
