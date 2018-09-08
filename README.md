@@ -1,10 +1,6 @@
 # Porcupine Neural Networks
 
-The experiments and code here accompany the paper [Porcupine Neural Networks: (Almost) All Local Optima are Global](https://arxiv.org/) by Soheil Feizi, Hamid Javadi, Jesse Zhang, and David Tse.
-
-For experiments related to degree-one PNNs (Figure 7 in the paper), please see [PNN_degreeone_experiments.ipynb](https://github.com/jessemzhang/porcupine_neural_networks/blob/master/PNN_degreeone_experiments.ipynb).
-
-For experiments related to general PNNs (Figure 8 in the paper), please see [PNN_experiments.ipynb](https://github.com/jessemzhang/porcupine_neural_networks/blob/master/PNN_experiments.ipynb).
+The experiments and code here accompany the paper [Porcupine Neural Networks: (Almost) All Local Optima are Global](https://arxiv.org/abs/1710.02196) by Soheil Feizi, Hamid Javadi, Jesse Zhang, and David Tse.
 
 ## Dependencies:
 
